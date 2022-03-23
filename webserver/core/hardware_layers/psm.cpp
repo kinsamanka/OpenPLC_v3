@@ -368,7 +368,7 @@ void kill_psm()
     char log_msg[BUFFER_LIMIT];
     sprintf(log_msg, "PSM: Killing previous PSM modules...\n");
     log(log_msg);
-    char *cmd = "ps aux | grep ./core/psm/main.py | awk '{print $2}'";
+    char *cmd = "/bin/ps aux | /bin/grep ./core/psm/main.py | /usr/bin/awk '{print $2}'";
     
     FILE *psm_proc;
     if ((psm_proc = popen(cmd, "r")) == NULL)
