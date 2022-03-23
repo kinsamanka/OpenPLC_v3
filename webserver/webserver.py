@@ -15,8 +15,13 @@ import ctypes
 
 import flask 
 import flask_login
+import logging
 
 app = flask.Flask(__name__)
+
+log = logging.getLogger("werkzeug")
+log.disabled = True
+
 app.secret_key = str(os.urandom(16))
 login_manager = flask_login.LoginManager()
 login_manager.init_app(app)
