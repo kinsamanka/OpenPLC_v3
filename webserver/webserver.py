@@ -30,9 +30,13 @@ import openplc
 import monitoring as monitor
 import sys
 import ctypes
+import logging
 
 import flask 
 import flask_login
+
+log = logging.getLogger('werkzeug')
+log.setLevel(logging.ERROR)
 
 self_path = os.path.dirname(__file__)
 
