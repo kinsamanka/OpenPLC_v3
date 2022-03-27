@@ -232,13 +232,12 @@ if(OPLC_MAIN_PROGRAM)
     # The makefile based project put their libs here
     link_directories(./lib)
 
-    add_executable(openplc ${oplc_SRC} ${OPLC_USER_DIR}/Config0.c ${OPLC_USER_DIR}/Res0.c ${OPLC_USER_DIR}/glueVars.cpp)
+    add_library(openplc STATIC ${oplc_SRC})
+    add_executable(openplc_bin ${OPLC_USER_DIR}/Config0.c ${OPLC_USER_DIR}/Res0.c ${OPLC_USER_DIR}/glueVars.cpp)
+    target_link_libraries(openplc_bin openplc)
+    set_target_properties(openplc_bin PROPERTIES OUTPUT_NAME "openplc")
 
     target_include_directories(openplc SYSTEM PUBLIC ${OPLC_CORE_DIR}/lib)
-
-    set_target_properties(openplc PROPERTIES SUFFIX "")
-    set_target_properties(openplc PROPERTIES OUTPUT_NAME "openplc")
-    set_target_properties(openplc PROPERTIES PREFIX "")
 
     add_dependencies(openplc files_generator)
     if(OPLC_MODBUS)
