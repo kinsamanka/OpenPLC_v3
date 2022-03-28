@@ -1,59 +1,43 @@
-#!/bin/bash
+#!/bin/sh -ae
 if [ $# -eq 0 ]; then
     echo "Error: You must provide a file to be compiled as argument"
     exit 1
 fi
 
-#move into the scripts folder if you're not there already
-cd scripts &>/dev/null
+. $(dirname "$(readlink -f "$0")")/env
 
-OPENPLC_PLATFORM=$(cat ../etc/openplc_platform)
 echo "compiling program for $OPENPLC_PLATFORM"
 echo ""
     
 if [ "$OPENPLC_PLATFORM" = "linux" ]; then
-    cd ../build
-    x=OFF
-    if [ -e ../etc/alpine ]; then
-        x=ON
-    fi
-    cmake .. -Dprogram_name=$1 -DOPLC_MUSL=$x
-    cmake --build .
-    if [ $? -ne 0 ]; then
-        echo "Compilation finished with errors!"
-        exit 1
-    fi
-    echo "Compilation finished successfully!"
-    exit 0
-    
-elif [ "$OPENPLC_PLATFORM" = "win" ]; then
-    cd ../build
-    cmake .. -Dprogram_name=$1
-    cmake --build .
-    if [ $? -ne 0 ]; then
-        echo "Compilation finished with errors!"
-        exit 1
-    fi
-    echo "Compilation finished successfully!"
-    exit 0
+    cd /tmp
 
-elif [ "$OPENPLC_PLATFORM" = "rpi" ]; then
-    
-    cd ../build
-    cmake .. -Dprogram_name=$1 -DOPLC_PLATFORM_RPI=ON
-    cmake --build .
-    
-    if [ $? -ne 0 ]; then
-        echo "Error compiling C files"
-        echo "Compilation finished with errors!"
-        exit 1
+    x=""
+    if [ "$OPLC_MUSL" = "ON" ]; then
+        x="-DOPLC_MUSL"
     fi
+
+    cp $PREFIX/etc/st_files/$1 .
+
+    st_optimizer $1 $1
+    iec2c -I $PREFIX/runtime/lib $1 >/dev/null
+    glue_generator >/dev/null
+
+    for a in glueVars.cpp Config0.c Res0.c $PREFIX/runtime/core/hardware_layer.cpp; do
+        echo "Compiling $a ..."
+        cc $x -O3 -DNDEBUG -I$PREFIX/include -I$PREFIX/runtime/core -c $a
+    done
+
+    echo "Linking..."
+    c++ -rdynamic Config0.o Res0.o glueVars.o hardware_layer.o -o $PREFIX/bin/openplc \
+        -lopenplc -lpthread -lmodbus -lasiodnp3  -lasiopal -lopendnp3 -lopenpal \
+        -L$PREFIX/lib -Wl,-rpath,$PREFIX/lib
+
     echo "Compilation finished successfully!"
     exit 0
-
 
 else
-    echo "Error: Undefined platform! OpenPLC can only compile for Windows, Linux and Raspberry Pi environments"
+    echo "Error: Undefined platform! This OpenPLC setup is configured for Linux environment only"
     echo "Compilation finished with errors!"
     exit 1
 fi

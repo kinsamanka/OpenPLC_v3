@@ -160,7 +160,7 @@ if(OPLC_MODBUS)
     ExternalProject_Add(libmodbus_proj
         SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/utils/libmodbus_src
         BUILD_IN_SOURCE 1
-        CONFIGURE_COMMAND ./autogen.sh COMMAND ./configure --prefix=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/..
+        CONFIGURE_COMMAND ./autogen.sh COMMAND ./configure --prefix=${CMAKE_INSTALL_PREFIX}
         BUILD_COMMAND ${MAKE}
         COMMENT "LIBMODBUS INSTALLED")
 else()
@@ -221,6 +221,7 @@ if(OPLC_MAIN_PROGRAM)
 
     set(OPLC_USER_DIR ${PROJECT_SOURCE_DIR}/etc/src)
     file(GLOB oplc_SRC runtime/core/*.cpp runtime/core/dnp3s/*.cpp runtime/core/modbusslave/*.cpp runtime/core/modbusmaster/*.cpp runtime/core/service/*.cpp runtime/core/enip/*.cpp runtime/vendor/inih-r46/*.c)
+    list(FILTER oplc_SRC EXCLUDE REGEX ".*hardware_layer\\.cpp$")
 
     include_directories(${OPLC_USER_DIR})
     include_directories(runtime/core)
@@ -229,13 +230,18 @@ if(OPLC_MAIN_PROGRAM)
     include_directories(runtime/vendor/inih-r46)
     include_directories(./include)
 
+    file(GLOB_RECURSE OPENPLC_INCLUDE_FILES "runtime/core/lib/*.h")
+
     # The makefile based project put their libs here
-    link_directories(./lib)
+    link_directories(${CMAKE_INSTALL_PREFIX}/lib)
 
     add_library(openplc STATIC ${oplc_SRC})
-    add_executable(openplc_bin ${OPLC_USER_DIR}/Config0.c ${OPLC_USER_DIR}/Res0.c ${OPLC_USER_DIR}/glueVars.cpp)
+    add_executable(openplc_bin ${OPLC_USER_DIR}/Config0.c ${OPLC_USER_DIR}/Res0.c ${OPLC_USER_DIR}/glueVars.cpp runtime/core/hardware_layer.cpp)
     target_link_libraries(openplc_bin openplc)
-    set_target_properties(openplc_bin PROPERTIES OUTPUT_NAME "openplc")
+    set_target_properties(openplc_bin
+            PROPERTIES OUTPUT_NAME "openplc"
+            PUBLIC_HEADER "${OPENPLC_INCLUDE_FILES}"
+    )
 
     target_include_directories(openplc SYSTEM PUBLIC ${OPLC_CORE_DIR}/lib)
 
@@ -258,4 +264,67 @@ if(OPLC_MAIN_PROGRAM)
     add_compile_options(openplc -fpermissive)
 
     file(WRITE ${PROJECT_SOURCE_DIR}/etc/active_program ${program_name})
+    file(WRITE ${PROJECT_SOURCE_DIR}/etc/openplc_driver blank_linux)
+
+    set(OPENPLC_PLATFORM "linux")
+    set(OPENPLC_DRIVER "blank_linux")
+
+    configure_file(
+            ${PROJECT_SOURCE_DIR}/scripts/env.in
+            ${PROJECT_BINARY_DIR}/scripts/env
+    )
+
+    set(OPENPLC
+        openplc
+        openplc_bin
+    )
+
+    install(TARGETS ${OPENPLC}
+            RUNTIME DESTINATION bin
+            LIBRARY DESTINATION lib
+            PUBLIC_HEADER DESTINATION include
+    )
+
+    set(SRC_DIRS
+        ${PROJECT_SOURCE_DIR}/runtime/lib
+        ${PROJECT_SOURCE_DIR}/runtime/hardware_layers
+        ${PROJECT_SOURCE_DIR}/runtime/vendor
+    )
+
+    install(DIRECTORY ${SRC_DIRS}
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/runtime
+    )
+
+    file(GLOB CORE_FILES runtime/core/*.h runtime/core/custom_layer.original runtime/core/hardware_layer.cpp)
+    install(FILES ${CORE_FILES}
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/runtime/core/
+    )
+
+    install(DIRECTORY ${PROJECT_SOURCE_DIR}/webserver
+            DESTINATION ${CMAKE_INSTALL_PREFIX}
+    )
+
+    install(DIRECTORY ${PROJECT_SOURCE_DIR}/etc/st_files
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/etc
+    )
+
+    install(FILES ${PROJECT_SOURCE_DIR}/etc/active_program
+                  ${PROJECT_SOURCE_DIR}/etc/openplc_driver
+                  ${PROJECT_SOURCE_DIR}/webserver/openplc.db
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/etc
+    )
+
+    install(FILES ${PROJECT_BINARY_DIR}/scripts/env
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/scripts
+    )
+
+    INSTALL(DIRECTORY ${PROJECT_SOURCE_DIR}/scripts/
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/scripts
+            FILES_MATCHING PATTERN "*.sh"
+            PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
+                        GROUP_EXECUTE GROUP_READ
+                        WORLD_EXECUTE WORLD_READ
+    )
+
+
 endif()

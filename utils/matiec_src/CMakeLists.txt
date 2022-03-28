@@ -60,3 +60,5 @@ set_property(TARGET iec2c PROPERTY CXX_STANDARD 98)
 add_executable(iec2iec main.cc)
 target_link_libraries(iec2iec stage1_2 stage3 stage4_iec absyntax absyntax_utils)
 set_property(TARGET iec2iec PROPERTY CXX_STANDARD 98)
+
+install (TARGETS iec2c iec2iec RUNTIME DESTINATION bin)

@@ -34,3 +34,5 @@ if (OPLC_BUILD_TESTS)
     enable_testing()
     add_test(NAME glue_generator_test COMMAND gg_unit_test)
 endif()
+
+install (TARGETS glue_generator RUNTIME DESTINATION bin)

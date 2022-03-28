@@ -24,3 +24,4 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin)
 
 # The main application that we always build
 add_executable(st_optimizer st_optimizer.cpp)
+install (TARGETS st_optimizer RUNTIME DESTINATION bin)

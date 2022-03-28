@@ -152,8 +152,8 @@ endif()
 # ----- install -----
 
 # common pattern and exludes for all installed headers
-set(INSTALL_ARGS FILES_MATCHING PATTERN "*.h" PATTERN ".deps" EXCLUDE PATTERN ".libs" EXCLUDE)
-install(DIRECTORY ./cpp/libs/include/ DESTINATION include ${INSTALL_ARGS})
+# set(INSTALL_ARGS FILES_MATCHING PATTERN "*.h" PATTERN ".deps" EXCLUDE PATTERN ".libs" EXCLUDE)
+# install(DIRECTORY ./cpp/libs/include/ DESTINATION include ${INSTALL_ARGS})
 
 if(DNP3_DEMO)
 
