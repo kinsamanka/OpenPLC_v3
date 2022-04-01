@@ -33,6 +33,7 @@ if [ "$OPENPLC_PLATFORM" = "linux" ]; then
         -lopenplc -lpthread -lmodbus -lasiodnp3  -lasiopal -lopendnp3 -lopenpal \
         -L$PREFIX/lib -Wl,-rpath,$PREFIX/lib
 
+    echo -n $1 > $PREFIX/etc/active_program
     echo "Compilation finished successfully!"
     exit 0
 
