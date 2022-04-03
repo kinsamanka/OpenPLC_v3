@@ -10,7 +10,9 @@ echo "compiling program for $OPENPLC_PLATFORM"
 echo ""
     
 if [ "$OPENPLC_PLATFORM" = "linux" ]; then
-    cd /tmp
+    rm -rf /tmp/build
+    mkdir -p /tmp/build
+    cd /tmp/build
 
     x=""
     if [ "$OPLC_MUSL" = "ON" ]; then
@@ -20,16 +22,27 @@ if [ "$OPENPLC_PLATFORM" = "linux" ]; then
     cp $PREFIX/etc/st_files/$1 .
 
     st_optimizer $1 $1
-    iec2c -I $PREFIX/runtime/lib $1 >/dev/null
+    files=$(iec2c -I $PREFIX/runtime/lib $1 | sed "s/\(POUS\|LOCAT\).*//") >/dev/null
     glue_generator >/dev/null
+    echo $files
 
-    for a in glueVars.cpp Config0.c Res0.c $PREFIX/runtime/core/hardware_layer.cpp; do
+    src=""
+    out=""
+    for f in  $files; do
+        if [ -z ${f##*.c} ]; then
+            src="${src} ${f}"
+            out="${out} ${f/\.c/\.o}"
+        fi
+    done;
+    echo $out
+
+    for a in ${src} glueVars.cpp $PREFIX/runtime/core/hardware_layer.cpp; do
         echo "Compiling $a ..."
         cc $x -O3 -DNDEBUG -I$PREFIX/include -I$PREFIX/runtime/core -c $a
     done
 
     echo "Linking..."
-    c++ -rdynamic Config0.o Res0.o glueVars.o hardware_layer.o -o $PREFIX/bin/openplc \
+    c++ -rdynamic ${out} glueVars.o hardware_layer.o -o $PREFIX/bin/openplc \
         -lopenplc -lpthread -lmodbus -lasiodnp3  -lasiopal -lopendnp3 -lopenpal \
         -L$PREFIX/lib -Wl,-rpath,$PREFIX/lib
 
